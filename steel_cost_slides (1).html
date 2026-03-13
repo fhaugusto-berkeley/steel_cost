@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Steel Cost Analysis</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: transparent;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      padding: 0;
+    }
+
+    .slideshow {
+      width: 100%;
+      max-width: 900px;
+      position: relative;
+    }
+
+    .slides-viewport {
+      overflow: hidden;
+    }
+
+    .slides-track {
+      display: flex;
+      transition: transform 0.45s cubic-bezier(0.65, 0, 0.35, 1);
+    }
+
+    .slide {
+      min-width: 100%;
+      padding: 2rem 2.25rem 1.75rem;
+    }
+
+    .slide-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: #111;
+      text-align: center;
+      margin-bottom: 0.6rem;
+      line-height: 1.3;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 14px;
+      margin-bottom: 1.25rem;
+      font-size: 12px;
+      color: #333;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .legend-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .chart-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #111;
+      margin-bottom: 4px;
+    }
+
+    .chart-wrapper {
+      position: relative;
+      width: 100%;
+      height: 400px;
+    }
+
+    .slide-caption {
+      margin-top: 1rem;
+      font-size: 12px;
+      font-weight: 700;
+      color: #000;
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .slide-description {
+      margin-top: 1.25rem;
+      font-size: 12px;
+      font-weight: 400;
+      color: #000;
+      line-height: 1.6;
+    }
+
+    /* Navigation */
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 1.25rem;
+    }
+
+    .nav-btn {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 50%;
+      width: 38px;
+      height: 38px;
+      cursor: pointer;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s, border-color 0.2s;
+      color: #333;
+    }
+
+    .nav-btn:hover { background: #f5f5f5; border-color: #bbb; }
+    .nav-btn:disabled { opacity: 0.3; cursor: default; }
+
+    .dots {
+      display: flex;
+      gap: 8px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #ccc;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .dot.active { background: #333; }
+  </style>
+</head>
+<body>
+
+  <div class="slideshow">
+    <div class="slides-viewport">
+      <div class="slides-track" id="track">
+
+        <!-- SLIDE 1: Stacked Bar Chart -->
+        <div class="slide">
+          <h2 class="slide-title">2030 base-case cost comparison</h2>
+
+          <div class="legend">
+            <div class="legend-item"><div class="legend-dot" style="background:#D9652A;"></div> Iron Ore Feedstock</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#6B9E8F;"></div> Steelmaking Capex</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#4DCB7B;"></div> Hydrogen Cost</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#222222;"></div> Coking Coal</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#4DD9F0;"></div> Other Costs</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#F5C518;"></div> Grid Electricity</div>
+            <div class="legend-item"><div class="legend-dot" style="background:#6B7ED4;"></div> Fixed O&amp;M</div>
+          </div>
+
+          <div class="chart-label">LCOS (US$/t)</div>
+          <div class="chart-wrapper">
+            <canvas id="stackedChart"></canvas>
+          </div>
+
+          <p class="slide-caption">
+            IECC's 2030 base-case levelized cost of steel (LCOS) estimates BF-BOF at ~US$536/t and H₂-DRI/EAF at<br>
+            ~US$562/t—a ~US$26/t premium in nominal US$ terms.
+          </p>
+        </div>
+
+        <!-- SLIDE 2: Waterfall Chart -->
+        <div class="slide">
+          <h2 class="slide-title">Cost parity when FX + imported‑input exposure are included</h2>
+
+          <div class="chart-wrapper" style="height:360px;">
+            <canvas id="waterfallChart"></canvas>
+          </div>
+
+          <p class="slide-caption">
+            BF‑BOF steel is structurally exposed to USD‑priced imported coking coal. IECC adjusts BF‑BOF costs for coal inflation and INR depreciation; even under conservative "half‑historical" adjustment rates, BF‑BOF rises (e.g., to ~US$588/t in the 2030 comparison), shifting H₂‑DRI/EAF from a small premium to parity/advantage under the same 2030 technology assumptions.
+          </p>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav">
+      <button class="nav-btn" id="prevBtn" disabled onclick="goTo(current - 1)">&#8592;</button>
+      <div class="dots">
+        <div class="dot active" onclick="goTo(0)"></div>
+        <div class="dot" onclick="goTo(1)"></div>
+      </div>
+      <button class="nav-btn" id="nextBtn" onclick="goTo(current + 1)">&#8594;</button>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script>
+    /* ── Slide navigation ── */
+    let current = 0;
+    const total = 2;
+    const track = document.getElementById('track');
+    const dots = document.querySelectorAll('.dot');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    function goTo(idx) {
+      if (idx < 0 || idx >= total) return;
+      current = idx;
+      track.style.transform = `translateX(-${current * 100}%)`;
+      dots.forEach((d, i) => d.classList.toggle('active', i === current));
+      prevBtn.disabled = current === 0;
+      nextBtn.disabled = current === total - 1;
+    }
+
+    /* ── Stacked Bar Chart ── */
+    const stackColors = ['#D9652A','#6B9E8F','#4DCB7B','#222222','#4DD9F0','#F5C518','#6B7ED4'];
+    const stackLabels = ['Iron Ore Feedstock','Steelmaking Capex','Hydrogen Cost','Coking Coal','Other Costs','Grid Electricity','Fixed O&M'];
+    const bfbof  = [160, 84, 0,   159, 93, 14, 25];
+    const greens = [177, 71, 198, 0,   72, 24, 19];
+
+    const stackedDatasets = stackLabels.map((lbl, i) => ({
+      label: lbl,
+      data: [bfbof[i], greens[i]],
+      backgroundColor: stackColors[i],
+      borderColor: stackColors[i],
+      stack: 'stack'
+    }));
+
+    const stackedChart = new Chart(document.getElementById('stackedChart'), {
+      type: 'bar',
+      data: {
+        labels: ['New BF-BOF Business As Usual', 'Green Steel Base Case H2 at 3.0 US$/kg'],
+        datasets: stackedDatasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => ` ${ctx.dataset.label}: ${ctx.parsed.y} US$/t`
+            },
+            filter: (item) => item.parsed.y > 0
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 12, family: "'Plus Jakarta Sans', sans-serif" }, color: '#555' },
+            border: { color: '#ddd' }
+          },
+          y: {
+            min: 0,
+            max: 600,
+            ticks: {
+              stepSize: 200,
+              font: { size: 11, family: "'Plus Jakarta Sans', sans-serif" },
+              color: '#888'
+            },
+            grid: { color: 'rgba(0,0,0,0.06)' },
+            border: { display: false }
+          }
+        },
+        animation: false
+      },
+      plugins: [{
+        id: 'stackedLabels',
+        afterDatasetsDraw(chart) {
+          const ctx = chart.ctx;
+          chart.data.datasets.forEach((ds, dsIdx) => {
+            if (ds.data.every(v => v === 0)) return;
+            const meta = chart.getDatasetMeta(dsIdx);
+            meta.data.forEach((bar, barIdx) => {
+              const val = ds.data[barIdx];
+              if (!val || val < 8) return;
+              const cx = bar.x;
+              const cy = bar.y + (bar.height / 2);
+              const isDark = ds.backgroundColor === '#222222';
+              ctx.save();
+              ctx.fillStyle = isDark ? '#ffffff' : '#111';
+              ctx.font = `700 12px 'Plus Jakarta Sans', sans-serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(val, cx, cy);
+              ctx.restore();
+            });
+          });
+        }
+      }]
+    });
+
+    /* ── Waterfall Chart ── */
+    const wfLabels = [
+      'BF-BOF Base Case\n(₹2030/t)',
+      '30y Coking Coal\ninflation (₹2030/t)',
+      '30y INR/USD\nDevaluation (₹2030/t)',
+      'Cost considering\nboth effects (₹2030/t)',
+      'Green Steel\nH2-DRI-EAF (₹2030/t)'
+    ];
+    const bases  = [0,     48198, 50848, 0,     0    ];
+    const deltas = [48198, 2649,  2073,  52921, 50543];
+    const wfColors = ['#D9652A','#5BB8D4','#5BB8D4','#D9652A','#2B8C6E'];
+
+    new Chart(document.getElementById('waterfallChart'), {
+      type: 'bar',
+      data: {
+        labels: wfLabels,
+        datasets: [
+          {
+            label: 'spacer',
+            data: bases,
+            backgroundColor: 'rgba(0,0,0,0)',
+            borderColor: 'rgba(0,0,0,0)',
+            stack: 'stack'
+          },
+          {
+            label: 'value',
+            data: deltas,
+            backgroundColor: wfColors,
+            borderColor: wfColors,
+            stack: 'stack',
+            borderRadius: 2
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (ctx) => {
+                if (ctx.datasetIndex === 0) return null;
+                const total = bases[ctx.dataIndex] + deltas[ctx.dataIndex];
+                const val = ctx.dataIndex === 1 || ctx.dataIndex === 2
+                  ? '+' + deltas[ctx.dataIndex].toLocaleString()
+                  : total.toLocaleString();
+                return ' ₹' + val;
+              }
+            },
+            filter: (item) => item.datasetIndex !== 0
+          }
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: {
+              font: { size: 11, family: "'Plus Jakarta Sans', sans-serif" },
+              color: '#888',
+              maxRotation: 0,
+              callback: function(val, idx) { return wfLabels[idx].split('\n'); }
+            },
+            border: { color: '#ccc' }
+          },
+          y: {
+            min: 0,
+            max: 70000,
+            ticks: {
+              stepSize: 10000,
+              callback: (v) => v === 0 ? '-' : v.toLocaleString(),
+              font: { size: 11, family: "'Plus Jakarta Sans', sans-serif" },
+              color: '#888'
+            },
+            grid: { color: 'rgba(0,0,0,0.06)' },
+            border: { display: false },
+            title: {
+              display: true,
+              text: 'Levelized Cost of Steel (INR/t)',
+              font: { size: 11, family: "'Plus Jakarta Sans', sans-serif" },
+              color: '#888'
+            }
+          }
+        },
+        animation: false
+      },
+      plugins: [{
+        id: 'wfValueLabels',
+        afterDatasetsDraw(chart) {
+          const ctx = chart.ctx;
+          chart.data.datasets[1].data.forEach((val, i) => {
+            const meta = chart.getDatasetMeta(1);
+            const bar = meta.data[i];
+            ctx.save();
+            ctx.fillStyle = wfColors[i];
+            ctx.font = "500 11px 'Plus Jakarta Sans', sans-serif";
+            ctx.textAlign = 'center';
+            ctx.fillText(val.toLocaleString(), bar.x, bar.y - 6);
+            ctx.restore();
+          });
+        }
+      }]
+    });
+  </script>
+</body>
+</html>
