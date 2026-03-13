@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Steel Cost Analysis </title>
+  <title>Steel Cost Analysis</title>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -174,7 +174,7 @@
         <div class="slide">
           <h2 class="slide-title">Cost parity when FX + imported‑input exposure are included</h2>
 
-          <div class="chart-wrapper" style="height:360px;">
+          <div class="chart-wrapper" style="height:390px;">
             <canvas id="waterfallChart"></canvas>
           </div>
 
@@ -351,9 +351,11 @@
           x: {
             grid: { display: false },
             ticks: {
-              font: { size: 11, family: "'Plus Jakarta Sans', sans-serif" },
+              font: { size: 10, family: "'Plus Jakarta Sans', sans-serif" },
               color: '#888',
               maxRotation: 0,
+              minRotation: 0,
+              autoSkip: false,
               callback: function(val, idx) { return wfLabels[idx].split('\n'); }
             },
             border: { color: '#ccc' }
@@ -377,7 +379,8 @@
             }
           }
         },
-        animation: false
+        animation: false,
+        layout: { padding: { bottom: 10 } }
       },
       plugins: [{
         id: 'wfValueLabels',
